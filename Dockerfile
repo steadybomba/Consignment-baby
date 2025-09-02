@@ -1,11 +1,11 @@
-# Build stage (node)
+# Build stage (Node)
 FROM node:20-bullseye AS node-builder
-WORKDIR /work
-COPY frontend/package.json frontend/package-lock.json* ./frontend/
-COPY frontend /work/frontend
-RUN cd frontend && npm ci && npm run build
+WORKDIR /work/frontend
+COPY frontend/package.json frontend/package-lock.json* ./
+COPY frontend/ .
+RUN npm install --legacy-peer-deps && npm run build
 
-# Runtime
+# Runtime (Python)
 FROM python:3.11-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates && rm -rf /var/lib/apt/lists/*
