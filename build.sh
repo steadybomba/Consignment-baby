@@ -8,15 +8,14 @@ if [ -d frontend ]; then
   cd ..
   rm -rf static/admin-app || true
   mkdir -p static/admin-app
-  # common Vite output locations
-  if [ -d frontend/dist ]; then
-    cp -r frontend/dist/* static/admin-app/
-  elif [ -d frontend-dist ]; then
+  if [ -d frontend-dist ]; then
     cp -r frontend-dist/* static/admin-app/
+  elif [ -d frontend/dist ]; then
+    cp -r frontend/dist/* static/admin-app/
   else
-    echo "Warning: frontend build folder not found."
+    echo "Frontend build folder not found - check Vite output"
   fi
 else
-  echo "No frontend directory found, skipping frontend build."
+  echo "No frontend directory - skipping frontend build"
 fi
-echo "Build complete."
+echo "Build finished."
