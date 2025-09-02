@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Track your package</h1>
+  <form id="search-form" class="stack">
+    <label for="tracking">Tracking number</label>
+    <input id="tracking" name="tracking" placeholder="e.g. SIM250901123456" required>
+    <div>
+      <button type="submit">Track</button>
+      <a class="muted small" href="{{ url_for('admin_login') }}" style="margin-left:1rem">Admin</a>
+    </div>
+  </form>
+</section>
+
+<script>
+  document.getElementById('search-form').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const t = document.getElementById('tracking').value.trim();
+    if (t) window.location.href = `/track/${encodeURIComponent(t)}`;
+  });
+</script>
+{% endblock %}
