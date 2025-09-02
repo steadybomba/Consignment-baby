@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Tracking not found</h1>
+  <p>No shipment found for <code>{{ tracking }}</code>.</p>
+  <p><a href="{{ url_for('index') }}">Search another tracking</a></p>
+</section>
+{% endblock %}
