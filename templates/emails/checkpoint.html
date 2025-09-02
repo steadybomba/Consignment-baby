@@ -1,13 +1,9 @@
-<!doctype html>
-<html>
-  <body>
-    <p>Hi,</p>
-    <p>There’s a new update for <strong>{{ shipment.title }}</strong> ({{ shipment.tracking }}):</p>
-    <p><strong>{{ checkpoint.label }}</strong>{% if checkpoint.note %}: {{ checkpoint.note }}{% endif %}</p>
-    <p>Time: {{ checkpoint.timestamp }}<br>
-       Coordinates: {{ '%.4f'|format(checkpoint.lat) }}, {{ '%.4f'|format(checkpoint.lng) }}</p>
-    <p><a href="{{ track_url }}">View on the live map</a></p>
-    <hr>
-    <p style="font-size:12px;color:#666">Don’t want these emails? Unsubscribe from the tracking page.</p>
-  </body>
-</html>
+<!doctype html><html><body>
+<p>Hi,</p>
+<p>There’s an update for <strong>{{ shipment.title }}</strong> ({{ shipment.tracking }}):</p>
+<p><strong>{{ checkpoint.label }}</strong>{% if checkpoint.note %}: {{ checkpoint.note }}{% endif %}</p>
+<p>Time: {{ checkpoint.timestamp }}<br>Coordinates: {{ checkpoint.lat }}, {{ checkpoint.lng }}</p>
+<p><a href="{{ track_url }}">View on map</a></p>
+<hr>
+<p style="font-size:12px;color:#666">Unsubscribe via the tracking page.</p>
+</body></html>
