@@ -1,0 +1,18 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Admin SPA</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head><body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<!-- small inline SPA for quick dev (but use the Vite app for production) -->
+<script>
+const e = React.createElement;
+function App(){
+  const [data, setData] = React.useState([]);
+  React.useEffect(()=>fetch('/api/admin/shipments').then(r=>r.json()).then(setData),[]);
+  return e('div', {className:'container'}, e('h1', null, 'Admin (Quick SPA)'), data.map(s => e('div',{key:s.tracking_number, className:'card'}, e('h3',null, s.title + ' — ' + s.tracking_number))));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(e(App));
+</script>
+</body></html>
