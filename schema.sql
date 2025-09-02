@@ -1,32 +1,35 @@
-DROP TABLE IF EXISTS shipments;
-DROP TABLE IF EXISTS checkpoints;
-DROP TABLE IF EXISTS subscribers;
+PRAGMA foreign_keys = ON;
 
-CREATE TABLE shipments (
+CREATE TABLE IF NOT EXISTS shipments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tracking TEXT UNIQUE NOT NULL,
-    title TEXT,
-    origin_lat REAL,
-    origin_lng REAL,
-    dest_lat REAL,
-    dest_lng REAL,
-    status TEXT DEFAULT 'In Transit'
+    title TEXT NOT NULL DEFAULT 'Consignment',
+    origin_lat REAL NOT NULL,
+    origin_lng REAL NOT NULL,
+    dest_lat REAL NOT NULL,
+    dest_lng REAL NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Created',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE checkpoints (
+CREATE TABLE IF NOT EXISTS checkpoints (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     shipment_id INTEGER NOT NULL,
-    lat REAL,
-    lng REAL,
-    label TEXT,
+    position INTEGER NOT NULL DEFAULT 0,
+    lat REAL NOT NULL,
+    lng REAL NOT NULL,
+    label TEXT NOT NULL DEFAULT 'Scanned',
     note TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (shipment_id) REFERENCES shipments (id)
+    FOREIGN KEY (shipment_id) REFERENCES shipments(id) ON DELETE CASCADE
 );
 
-CREATE TABLE subscribers (
+CREATE TABLE IF NOT EXISTS subscribers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     shipment_id INTEGER NOT NULL,
-    email TEXT,
-    FOREIGN KEY (shipment_id) REFERENCES shipments (id)
+    email TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (shipment_id) REFERENCES shipments(id) ON DELETE CASCADE
 );
