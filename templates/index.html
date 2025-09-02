@@ -3,20 +3,16 @@
 <section class="card">
   <h1>Track your package</h1>
   <form id="search-form" class="stack">
-    <label for="tracking">Tracking number</label>
-    <input id="tracking" name="tracking" placeholder="e.g. SIM250901123456" required>
-    <div>
-      <button type="submit">Track</button>
-      <a class="muted small" href="{{ url_for('admin_login') }}" style="margin-left:1rem">Admin</a>
-    </div>
+    <label>Tracking number <input id="tracking" placeholder="e.g. SIM250901123456"></label>
+    <button type="submit">Track</button>
   </form>
+  <p class="muted">Or <a href="{{ url_for('admin_login') }}">create a simulated shipment</a>.</p>
 </section>
-
 <script>
-  document.getElementById('search-form').addEventListener('submit', (e)=>{
-    e.preventDefault();
-    const t = document.getElementById('tracking').value.trim();
-    if (t) window.location.href = `/track/${encodeURIComponent(t)}`;
-  });
+document.getElementById('search-form').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const t = document.getElementById('tracking').value.trim();
+  if(t) window.location.href = `/track/${encodeURIComponent(t)}`;
+});
 </script>
 {% endblock %}
