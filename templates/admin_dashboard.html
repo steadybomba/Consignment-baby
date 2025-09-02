@@ -1,12 +1,29 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="card" style="max-width:480px;margin:1rem auto;">
-  <h1>Admin Login</h1>
-  {% if error %}<p style="color:var(--danger)">{{ error }}</p>{% endif %}
-  <form method="post" class="stack">
-    <label>User <input name="user" required></label>
-    <label>Password <input name="password" type="password" required></label>
-    <button type="submit">Login</button>
-  </form>
+<section class="card">
+  <h1>Admin Dashboard</h1>
+  <p class="muted">For full SPA, go to <a href="{{ url_for('admin_app') }}">Admin SPA</a></p>
+
+  <div id="shipments">Loading…</div>
 </section>
+<script>
+async function load(){
+  const res = await fetch('/api/admin/shipments');
+  const data = await res.json();
+  const el = document.getElementById('shipments');
+  el.innerHTML = '';
+  data.forEach(s=>{
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `<h3>${s.title} — <small class="muted">${s.tracking_number}</small></h3>
+      <p>Status: ${s.status} — Updated: ${s.updated_at}</p>
+      <p><button onclick="openMap('${s.tracking_number}')">Open map</button>
+      <button onclick="startSim('${s.tracking_number}')">Simulate</button></p>`;
+    el.appendChild(div);
+  });
+}
+function openMap(t){ window.open(`/track/${t}`, '_blank'); }
+async function startSim(t){ await fetch(`/api/admin/shipments/${encodeURIComponent(t)}/simulate`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({steps:6, interval:2})}); alert('Simulation started'); }
+document.addEventListener('DOMContentLoaded', load);
+</script>
 {% endblock %}
