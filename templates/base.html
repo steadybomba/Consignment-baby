@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{{ title or 'Consignment Tracker' }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-row">
+        <a class="brand" href="{{ url_for('index') }}">📦 Consignment Tracker</a>
+        <nav class="nav-links">
+          <a href="{{ url_for('index') }}">Home</a>
+          {% if session.get('admin_logged_in') %}
+            <a href="{{ url_for('admin_app') }}">Admin SPA</a>
+            <a href="{{ url_for('admin_dashboard') }}">Admin (Server)</a>
+            <a href="{{ url_for('admin_logout') }}">Logout</a>
+          {% else %}
+            <a href="{{ url_for('admin_login') }}">Admin login</a>
+          {% endif %}
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <small>Demo consignment tracker — not for production use without review.</small>
+      </div>
+    </footer>
+  </body>
+</html>
