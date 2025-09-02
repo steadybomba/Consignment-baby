@@ -1,6 +1,29 @@
 # Consignment-baby
 $$$
+# Consignment Tracker (Render-ready)
+
+Quick start (local):
+1. python -m venv .venv && source .venv/bin/activate
+2. pip install -r requirements.txt
+3. cp .env.example .env and set TELEGRAM_TOKEN, SMTP_* and APP_BASE_URL as needed
+4. flask --app app.py init-db
+5. python app.py
+
+For frontend dev:
+cd frontend
+npm install
+npm run dev
+
+Render deployment:
+- Push repo to GitHub
+- Create new Web Service on Render, connect repo
+- Set environment variables in Render dashboard (ADMIN_USER, ADMIN_PASSWORD, TELEGRAM_TOKEN, APP_BASE_URL, SMTP_*)
+- Deploy; run the webhook set command:
+  curl -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/setWebhook" -d "url=https://<your-render-url>/telegram/webhook/$TELEGRAM_TOKEN"
+
 # Consignment Tracker (Demo)
+
+
 
 A minimal Flask app to simulate package tracking with a live map (Leaflet) and an email engine for checkpoint notifications.
 
