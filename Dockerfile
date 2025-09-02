@@ -1,21 +1,20 @@
-#!/usr/bin/env bash
-set -e
-echo "Building frontend..."
-if [ -d frontend ]; then
-  cd frontend
-  npm ci --silent
-  npm run build
-  cd ..
-  rm -rf static/admin-app || true
-  mkdir -p static/admin-app
-  if [ -d frontend-dist ]; then
-    cp -r frontend-dist/* static/admin-app/
-  elif [ -d frontend/dist ]; then
-    cp -r frontend/dist/* static/admin-app/
-  else
-    echo "Frontend build folder not found - check Vite output"
-  fi
-else
-  echo "No frontend directory - skipping frontend build"
-fi
-echo "Build finished."
+# Build stage (node)
+FROM node:20-bullseye AS node-builder
+WORKDIR /work
+COPY frontend/package.json frontend/package-lock.json* ./frontend/
+COPY frontend /work/frontend
+RUN cd frontend && npm ci && npm run build
+
+# Runtime
+FROM python:3.11-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN rm -rf static/admin-app || true
+RUN mkdir -p static/admin-app
+COPY --from=node-builder /work/frontend/dist/ static/admin-app/
+ENV PORT=10000
+EXPOSE 10000
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:10000", "--workers", "3"]
