@@ -1,23 +1,25 @@
 """
-Main Flask app for Consignment Tracker (updated with JWT, PostgreSQL, Celery, and security headers).
+Main Flask app for Consignment Tracker (updated for thread-safety, validation, and security).
 """
 
 import os
+import threading
 import logging
 from datetime import datetime, timedelta
 from functools import wraps
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
-    jsonify, send_from_directory, current_app
+    jsonify, send_from_directory, current_app, session
 )
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 from celery import Celery
 from pydantic import BaseModel, Field, ValidationError
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Initialize Flask app
 app = Flask(__name__, static_folder="static", template_folder="templates")
@@ -26,7 +28,8 @@ app.config.from_mapping(
     SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL", "sqlite:///consignment.db"),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     JWT_SECRET_KEY=os.environ.get("JWT_SECRET_KEY", "super-secret-key"),
-    CELERY_BROKER_URL=os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    CELERY_BROKER_URL=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
+    ADMIN_PASSWORD_HASH=generate_password_hash(os.environ.get("ADMIN_PASSWORD", "change-me"))
 )
 
 # Initialize extensions
@@ -113,8 +116,8 @@ def admin_login():
     if not data or "user" not in data or "password" not in data:
         return jsonify({"error": "Missing credentials"}), 400
     
-    if (data["user"] == os.environ.get("ADMIN_USER") and 
-        data["password"] == os.environ.get("ADMIN_PASSWORD")):
+    if (data["user"] == os.environ.get("ADMIN_USER", "admin") and 
+        check_password_hash(app.config["ADMIN_PASSWORD_HASH"], data["password"])):
         access_token = create_access_token(identity=data["user"])
         return jsonify(access_token=access_token)
     
@@ -236,6 +239,28 @@ def init_db():
     db.create_all()
     print("Database initialized.")
 
+# Telegram bot integration
+def start_telegram_bot():
+    if not os.getenv("TELEGRAM_TOKEN"):
+        return
+    
+    try:
+        from telegram_bot import start_bot_async
+        start_bot_async()
+        app.logger.info("Telegram bot started in background")
+    except ImportError:
+        app.logger.warning("Telegram bot module not available")
+    except Exception as e:
+        app.logger.error("Failed to start Telegram bot: %s", str(e))
+
 if __name__ == "__main__":
+    # Initialize database
+    with app.app_context():
+        db.create_all()
+    
+    # Start Telegram bot if configured
+    start_telegram_bot()
+    
+    # Run app
     port = int(os.environ.get("PORT", 5000))
     socketio.run(app, host="0.0.0.0", port=port, debug=bool(os.getenv("FLASK_DEBUG")))
