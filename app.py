@@ -1,5 +1,5 @@
 """
-Main Flask app for Consignment Tracker (updated for thread-safety, validation, and security).
+Main Flask app for Consignment Tracker (updated for thread-safety, validation, security, and async email).
 """
 
 import os
@@ -7,6 +7,7 @@ import threading
 import logging
 from datetime import datetime, timedelta
 from functools import wraps
+from typing import Optional, Dict, Any
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -29,7 +30,13 @@ app.config.from_mapping(
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     JWT_SECRET_KEY=os.environ.get("JWT_SECRET_KEY", "super-secret-key"),
     CELERY_BROKER_URL=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
-    ADMIN_PASSWORD_HASH=generate_password_hash(os.environ.get("ADMIN_PASSWORD", "change-me"))
+    ADMIN_PASSWORD_HASH=generate_password_hash(os.environ.get("ADMIN_PASSWORD", "change-me")),
+    SMTP_HOST=os.environ.get("SMTP_HOST", ""),
+    SMTP_PORT=int(os.environ.get("SMTP_PORT", "587")),
+    SMTP_USER=os.environ.get("SMTP_USER", ""),
+    SMTP_PASS=os.environ.get("SMTP_PASS", ""),
+    SMTP_FROM=os.environ.get("SMTP_FROM", "no-reply@example.com"),
+    APP_BASE_URL=os.environ.get("APP_BASE_URL", "http://localhost:5000")
 )
 
 # Initialize extensions
@@ -54,6 +61,19 @@ class Shipment(db.Model):
     status = db.Column(db.String(20), default="Created")
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "tracking": self.tracking,
+            "title": self.title,
+            "origin_lat": self.origin_lat,
+            "origin_lng": self.origin_lng,
+            "dest_lat": self.dest_lat,
+            "dest_lng": self.dest_lng,
+            "status": self.status,
+            "updated_at": self.updated_at
+        }
+
 class Checkpoint(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     shipment_id = db.Column(db.Integer, db.ForeignKey("shipment.id"), nullable=False)
@@ -63,6 +83,18 @@ class Checkpoint(db.Model):
     label = db.Column(db.String(50), nullable=False)
     note = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "shipment_id": self.shipment_id,
+            "position": self.position,
+            "lat": self.lat,
+            "lng": self.lng,
+            "label": self.label,
+            "note": self.note,
+            "timestamp": self.timestamp
+        }
 
 class Subscriber(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -75,13 +107,13 @@ class CheckpointCreate(BaseModel):
     lat: float = Field(..., ge=-90, le=90)
     lng: float = Field(..., ge=-180, le=180)
     label: str = Field(..., min_length=1)
-    note: str | None = None
+    note: Optional[str] = None
 
 class ShipmentCreate(BaseModel):
     tracking_number: str = Field(..., min_length=1)
     title: str = "Consignment"
-    origin: dict
-    destination: dict
+    origin: Dict[str, float]
+    destination: Dict[str, float]
     status: str = "Created"
 
 # Security headers
@@ -189,19 +221,19 @@ def api_add_checkpoint(tracking):
     shipment.updated_at = datetime.utcnow()
     db.session.commit()
 
-    # Celery task for email
-    send_checkpoint_email.delay(shipment.id, checkpoint.id)
+    # Celery task for async email
+    send_checkpoint_email_task.delay(shipment.id, checkpoint.id)
     
     return jsonify({"ok": True}), 201
 
-# Celery task
+# Celery task for email
 @celery.task
-def send_checkpoint_email(shipment_id, checkpoint_id):
-    from app import db
-    shipment = db.session.get(Shipment, shipment_id)
-    checkpoint = db.session.get(Checkpoint, checkpoint_id)
-    # Implement your email sending logic here
-    pass
+def send_checkpoint_email_task(shipment_id: int, checkpoint_id: int):
+    from email_utils import send_checkpoint_email_async
+    shipment = Shipment.query.get(shipment_id)
+    checkpoint = Checkpoint.query.get(checkpoint_id)
+    if shipment and checkpoint:
+        send_checkpoint_email_async(shipment.to_dict(), checkpoint.to_dict())
 
 # WebSocket
 @socketio.on("subscribe")
